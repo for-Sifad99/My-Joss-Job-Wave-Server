@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 
 const app = express();
@@ -35,11 +35,20 @@ async function run() {
         // await client.connect();
         const jobsCollection = client.db('Job_wave').collection('jobs');
 
-        // Get Jobs 
+        // Get All Jobs 
         app.get('/jobs', async (req, res) => {
             const result = await jobsCollection.find().toArray();
             res.send(result);
         });
+
+        // Get Specific One by Id 
+        app.get('/jobs/:id', async (req, res) => {
+            const id = req.params.id;
+
+            const result = await jobsCollection.findOne(query = { _id: new ObjectId(id) });
+            res.send(result);
+        });
+
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
