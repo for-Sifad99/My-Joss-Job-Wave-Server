@@ -32,8 +32,10 @@ async function run() {
         // Connect the client to the server	(optional starting in v4.7)
         await client.connect();
 
-        // await client.connect();
+        // Create jobsCollection:
         const jobsCollection = client.db('Job_wave').collection('jobs');
+        // Create applicationsCollection:
+        const applicationsCollection = client.db('Job_wave').collection('applications');
 
         // Get All Jobs 
         app.get('/jobs', async (req, res) => {
@@ -49,6 +51,13 @@ async function run() {
             res.send(result);
         });
 
+        // Insert Job Applications
+        app.post('/applications', async (req, res) => {
+            const application = req.body;
+
+            const result = await applicationsCollection.insertOne(application);
+            res.send(result);
+        });
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
