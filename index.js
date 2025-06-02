@@ -56,6 +56,22 @@ async function run() {
             const email = req.query.email;
 
             const result = await applicationsCollection.find({ applicantEmail: email }).toArray();
+
+            // ❌BAD Way to Aggregate Data
+            for (const application of result) {
+                const jobId = application.jobId;
+
+                const job = await jobsCollection.findOne({ _id: new ObjectId(jobId) });
+                application.title = job.title;
+                application.location = job.location;
+                application.jobType = job.jobType;
+                application.category = job.category;
+                application.salaryRange = job.salaryRange;
+                application.description = job.description;
+                application.company = job.company;
+                application.company_logo = job.company_logo;
+            }
+
             res.send(result);
         });
 
