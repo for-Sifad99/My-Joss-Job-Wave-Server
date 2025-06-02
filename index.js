@@ -51,6 +51,14 @@ async function run() {
             res.send(result);
         });
 
+        // Get Job Applications By User Email (Query system)
+        app.get('/applications', async (req, res) => {
+            const email = req.query.email;
+
+            const result = await applicationsCollection.find({ applicantEmail: email }).toArray();
+            res.send(result);
+        });
+
         // Insert Job Applications
         app.post('/applications', async (req, res) => {
             const application = req.body;
