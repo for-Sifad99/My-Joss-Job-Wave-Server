@@ -1,4 +1,5 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
@@ -36,6 +37,15 @@ async function run() {
         const jobsCollection = client.db('Job_wave').collection('jobs');
         // Create applicationsCollection:
         const applicationsCollection = client.db('Job_wave').collection('applications');
+
+        // JWT Token Api
+        app.post('/jwt', (req, res) => {
+            const userEmail = req.body;
+            const payload = userEmail;
+
+            const token = jwt.sign(payload, 'mySuperSecretKey99', { expiresIn: '1h' });
+            res.send({token});
+        });
 
         // Get Jobs by filtering
         app.get('/jobs', async (req, res) => {
