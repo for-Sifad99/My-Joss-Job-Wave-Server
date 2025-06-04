@@ -37,9 +37,15 @@ async function run() {
         // Create applicationsCollection:
         const applicationsCollection = client.db('Job_wave').collection('applications');
 
-        // Get All Jobs 
+        // Get Jobs by filtering
         app.get('/jobs', async (req, res) => {
-            const result = await jobsCollection.find().toArray();
+            const email = req.query.email;
+
+            const query = {};
+            if (email) {
+                query.hr_email = email;
+            }
+            const result = await jobsCollection.find(query).toArray();
             res.send(result);
         });
 
