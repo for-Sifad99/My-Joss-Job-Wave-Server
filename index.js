@@ -57,6 +57,21 @@ async function run() {
             res.send(result);
         });
 
+        // Get Job for Aggregate
+        app.get('/jobs/applications', async (req, res) => {
+            const email = req.query.email;
+
+            const jobs = await jobsCollection.find({ hr_email: email }).toArray();
+
+            // ❌BAD Way to Aggregate Data
+            for (const job of jobs) {
+                const application_count = await applicationsCollection.countDocuments({ jobId: job._id.toString() });
+                job.count = application_count;
+            };
+
+            res.send(jobs);
+        });
+
         // Get Specific One by Id 
         app.get('/jobs/:id', async (req, res) => {
             const id = req.params.id;
@@ -69,10 +84,10 @@ async function run() {
         app.get('/applications', async (req, res) => {
             const email = req.query.email;
 
-            const result = await applicationsCollection.find({ applicantEmail: email }).toArray();
+            const applications = await applicationsCollection.find({ applicantEmail: email }).toArray();
 
             // ❌BAD Way to Aggregate Data
-            for (const application of result) {
+            for (const application of applications) {
                 const jobId = application.jobId;
 
                 const job = await jobsCollection.findOne({ _id: new ObjectId(jobId) });
@@ -86,7 +101,7 @@ async function run() {
                 application.company_logo = job.company_logo;
             }
 
-            res.send(result);
+            res.send(applications);
         });
 
         // Insert Job Applications
