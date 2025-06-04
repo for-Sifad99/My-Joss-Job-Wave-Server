@@ -97,6 +97,15 @@ async function run() {
             res.send(result);
         });
 
+        // Get ALl Similar Posted Job that Match by Id
+        app.get('/applications/job/:jobId', async (req, res) => {
+            const job_id = req.params.jobId;
+
+            const result = await applicationsCollection.find({ jobId: job_id }).toArray();
+            res.send(result);
+        })
+
+
         // Delete Job Application By Id 
         app.delete('/applications/:id', async (req, res) => {
             const id = req.params.id;
