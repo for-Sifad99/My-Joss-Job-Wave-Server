@@ -105,6 +105,19 @@ async function run() {
             res.send(result);
         })
 
+        // Update Applications Status by Id
+        app.patch('/applications/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updatedDocs = {
+                $set: {
+                    status: req.body.status
+                }
+            };
+
+            const result = await applicationsCollection.updateOne(filter, updatedDocs);
+            res.send(result);
+        })
 
         // Delete Job Application By Id 
         app.delete('/applications/:id', async (req, res) => {
