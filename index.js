@@ -1,5 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
@@ -8,8 +9,31 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware:
-app.use(cors());
+app.use(cors({
+    origin: ['http://localhost:5173'], //Client Side Origin
+    credentials: true //Allow Cookie
+}));
 app.use(express.json());
+app.use(cookieParser());
+
+// Custom Middleware:
+const verifyJWTtoken = (req, res, next) => {
+    const token = req?.cookies?.token;
+    // If user not pass the token
+    if (!token) {
+        return res.status(401).send({ message: 'Unauthorized Access!' });
+    };
+
+    // Verify token
+    jwt.verify(token, process.env.JWT_ACCESS_SECRET_KEY, (err, decoded) => {
+        if (err) {
+            return res.status(401).send({ message: 'Unauthorized Access!' });
+        };
+
+        req.decoded = decoded;
+        next();
+    });
+};
 
 // Home route:
 app.get('/', (req, res) => {
@@ -39,12 +63,19 @@ async function run() {
         const applicationsCollection = client.db('Job_wave').collection('applications');
 
         // JWT Token Api
-        app.post('/jwt', (req, res) => {
-            const userEmail = req.body;
-            const payload = userEmail;
+        app.post('/jwt', async (req, res) => {
+            const payload = req.body;
 
-            const token = jwt.sign(payload, 'mySuperSecretKey99', { expiresIn: '1h' });
-            res.send({token});
+            // Create JWT Token
+            const token = jwt.sign(payload, process.env.JWT_ACCESS_SECRET_KEY, { expiresIn: '1d' });
+
+            // Set JWT Token in Cookie
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: false
+            });
+
+            res.send({ success: true });
         });
 
         // Get Jobs by filtering
@@ -68,8 +99,13 @@ async function run() {
         });
 
         // Get Job for Aggregate
-        app.get('/jobs/applications', async (req, res) => {
+        app.get('/jobs/applications', verifyJWTtoken, async (req, res) => {
             const email = req.query.email;
+
+            // Check Access JWT Token
+            if (email !== req.decoded.email) {
+                return res.status(403).send({ message: 'Forbidden Access!' });
+            };
 
             const jobs = await jobsCollection.find({ hr_email: email }).toArray();
 
