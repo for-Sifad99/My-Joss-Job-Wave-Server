@@ -1,6 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
+const admin = require("firebase-admin");
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
@@ -16,7 +17,13 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-// Custom Middleware:
+// Firebase Admin Setup:
+const serviceAccount = require('./FB-admin-key.json');
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+});
+
+// Custom Middleware (JWT TOKEN) :
 const verifyJWTtoken = (req, res, next) => {
     const token = req?.cookies?.token;
     // If user not pass the token
@@ -33,6 +40,21 @@ const verifyJWTtoken = (req, res, next) => {
         req.decoded = decoded;
         next();
     });
+};
+
+// (FIREBASE TOKEN) :
+const verifyFBToken = async (req, res, next) => {
+    const authHeader = req?.headers?.authorization;
+    console.log(authHeader);
+    const token = authHeader.split(' ')[1];
+    // If user not pass the token
+    if (!token) {
+        return res.status(401).send({ message: 'Unauthorized Access!' });
+    };
+
+    const tokenInfo = await admin.auth().verifyIdToken(token);
+    req.tokenEmail = tokenInfo.email;
+    next();
 };
 
 // Home route:
@@ -99,13 +121,8 @@ async function run() {
         });
 
         // Get Job for Aggregate
-        app.get('/jobs/applications', verifyJWTtoken, async (req, res) => {
+        app.get('/jobs/applications', async (req, res) => {
             const email = req.query.email;
-
-            // Check Access JWT Token
-            if (email !== req.decoded.email) {
-                return res.status(403).send({ message: 'Forbidden Access!' });
-            };
 
             const jobs = await jobsCollection.find({ hr_email: email }).toArray();
 
@@ -127,8 +144,18 @@ async function run() {
         });
 
         // Get Job Applications By User Email (Query system)
-        app.get('/applications', async (req, res) => {
+        app.get('/applications', verifyJWTtoken, verifyFBToken, async (req, res) => {
             const email = req.query.email;
+
+            // Check Access JWT Token
+            if (email != req.decoded.email) {
+                return res.status(403).send({ message: 'Forbidden Access!' });
+            };
+
+            // Check Access FB Token
+            if (email != req.tokenEmail) {
+                return res.status(403).send({ message: 'Forbidden Access!' });
+            };
 
             const applications = await applicationsCollection.find({ applicantEmail: email }).toArray();
 
